@@ -1,0 +1,49 @@
+import discord
+from datetime import datetime, timedelta
+import asyncio
+
+TOKEN = "MTUwNjg5MDQ1NzI2NTg2ODkxMg.G9bWv0.Bs7x71nt_H4piY-Kz2DWv8b7UnOVFyk8CM4Kxo"
+CHANNEL_ID = 1515335921854316664
+
+intents = discord.Intents.default()
+client = discord.Client(intents=intents)
+
+async def scheduled_message():
+    await client.wait_until_ready()
+
+    channel = client.get_channel(CHANNEL_ID)
+
+    if channel is None:
+        print("채널을 찾을 수 없습니다.")
+        return
+
+    now = datetime.now()
+
+    # 오늘 21시(오후 9시)
+    first_time = now.replace(hour=21, minute=0, second=0, microsecond=0)
+
+    # 이미 21시가 지났다면 내일 21시부터 시작
+    if now > first_time:
+        first_time += timedelta(days=1)
+
+    wait_seconds = (first_time - now).total_seconds()
+
+    print(f"첫 메시지까지 {wait_seconds:.0f}초 대기")
+
+    await asyncio.sleep(wait_seconds)
+
+    while not client.is_closed():
+        await channel.send("자동 메시지입니다!")
+
+        print("메시지 전송 완료")
+
+        # 20시간 대기
+        await asyncio.sleep(20 * 60 * 60)
+
+@client.event
+async def on_ready():
+    print(f"로그인 완료: {client.user}")
+
+    client.loop.create_task(scheduled_message())
+
+client.run(TOKEN)
