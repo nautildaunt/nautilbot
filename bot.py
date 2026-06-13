@@ -35,7 +35,7 @@ async def scheduled_message():
     await asyncio.sleep(wait_seconds)
 
     while not client.is_closed():
-        await channel.send("자동 메시지입니다!")
+        await channel.send("# 지금 시각부터 블랙마켓이 시작되었습니다. @1515365834682404946 ")
 
         print("메시지 전송 완료")
 
