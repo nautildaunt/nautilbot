@@ -77,7 +77,7 @@ async def scheduled_message():
         try:
 
             await channel.send(
-                f"# 블랙마켓이 시작되었습니다 <@&1515334567446183967> "
+                f"# 블랙마켓이 시작되었습니다 <@&{1515334567446183967}> "
             )
 
             send_time = datetime.now(
