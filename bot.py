@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 import asyncio
 import os
 import random
+import traceback
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -20,6 +21,9 @@ BOT_INSTANCE = random.randint(1000, 9999)
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 
+# 스케줄러 중복 실행 방지
+scheduler_task = None
+
 
 async def scheduled_message():
 
@@ -28,49 +32,131 @@ async def scheduled_message():
     print("✅ 스케줄러 시작", flush=True)
     print(f"BOT_INSTANCE = {BOT_INSTANCE}", flush=True)
 
-    channel = client.get_channel(CHANNEL_ID)
+    try:
 
-    if channel is None:
-        channel = await client.fetch_channel(CHANNEL_ID)
+        channel = client.get_channel(CHANNEL_ID)
 
-    now = datetime.now(ZoneInfo("Asia/Seoul"))
+        if channel is None:
 
-    # 테스트용 : 1분 후
-    target = now + timedelta(minutes=1)
+            print("채널 캐시에 없음 -> fetch 시도", flush=True)
 
-    wait_seconds = (target - now).total_seconds()
+            channel = await client.fetch_channel(
+                CHANNEL_ID
+            )
 
-    print("=" * 50, flush=True)
-    print(f"현재 시각(KST): {now}", flush=True)
-    print(f"테스트 전송 예정(KST): {target}", flush=True)
-    print(f"{wait_seconds:.0f}초 대기", flush=True)
-    print("=" * 50, flush=True)
+        now = datetime.now(
+            ZoneInfo("Asia/Seoul")
+        )
 
-    await asyncio.sleep(wait_seconds)
+        # 테스트용 1분 후
 
-    await channel.send(
-        f"# 테스트 메시지입니다! [{BOT_INSTANCE}] <@&{ROLE_ID}>"
-    )
+        target = now + timedelta(
+            minutes=1
+        )
 
-    print(
-        f"✅ 테스트 메시지 전송 완료 [{BOT_INSTANCE}]",
-        flush=True
-    )
+        wait_seconds = (
+            target - now
+        ).total_seconds()
+
+        print("=" * 50, flush=True)
+        print(
+            f"현재 시각(KST): {now}",
+            flush=True
+        )
+
+        print(
+            f"테스트 전송 예정(KST): {target}",
+            flush=True
+        )
+
+        print(
+            f"{wait_seconds:.0f}초 대기",
+            flush=True
+        )
+
+        print("=" * 50, flush=True)
+
+        await asyncio.sleep(
+            wait_seconds
+        )
+
+        await channel.send(
+            f"# 테스트 메시지입니다! [{BOT_INSTANCE}] <@&{ROLE_ID}>"
+        )
+
+        print(
+            f"✅ 테스트 메시지 전송 완료 [{BOT_INSTANCE}]",
+            flush=True
+        )
+
+    except Exception as e:
+
+        print(
+            "❌ scheduled_message 오류 발생",
+            flush=True
+        )
+
+        print(
+            type(e).__name__,
+            flush=True
+        )
+
+        print(
+            e,
+            flush=True
+        )
+
+        traceback.print_exc()
 
 
 @client.event
 async def on_ready():
 
-    print("=" * 50, flush=True)
-    print("로그인 완료", flush=True)
-    print(f"봇 이름 : {client.user}", flush=True)
-    print(f"봇 ID : {client.user.id}", flush=True)
-    print(f"BOT_INSTANCE : {BOT_INSTANCE}", flush=True)
+    global scheduler_task
+
     print("=" * 50, flush=True)
 
-    client.loop.create_task(
-        scheduled_message()
+    print(
+        "로그인 완료",
+        flush=True
     )
+
+    print(
+        f"봇 이름 : {client.user}",
+        flush=True
+    )
+
+    print(
+        f"봇 ID : {client.user.id}",
+        flush=True
+    )
+
+    print(
+        f"BOT_INSTANCE : {BOT_INSTANCE}",
+        flush=True
+    )
+
+    print("=" * 50, flush=True)
+
+    # 중복 실행 방지
+
+    if scheduler_task is None:
+
+        print(
+            "스케줄러 생성",
+            flush=True
+        )
+
+        scheduler_task = asyncio.create_task(
+            scheduled_message()
+        )
+
+    else:
+
+        print(
+            "이미 스케줄러가 실행 중",
+            flush=True
+        )
 
 
 client.run(TOKEN)
