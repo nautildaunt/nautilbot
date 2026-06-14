@@ -146,7 +146,7 @@ async def on_ready():
 
     # 🔽 스트리밍 상태 설정
     activity = discord.Streaming(
-        name="📢 블랙마켓 알림 봇",
+        name="📢 노틸을 위해서 열심히 일하기!",
         url="https://www.twitch.tv/nautlidauntiscute"
     )
 
