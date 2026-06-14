@@ -1,7 +1,7 @@
 import discord
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 import asyncio
-
 import os
 
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -19,12 +19,18 @@ async def scheduled_message():
         print("채널을 찾을 수 없습니다.")
         return
 
-    now = datetime.now()
+    # 한국 시간 기준
+    now = datetime.now(ZoneInfo("Asia/Seoul"))
 
-    # 오늘 21시(오후 9시)
-    first_time = now.replace(hour=21, minute=0, second=0, microsecond=0)
+    # 오늘 17시
+    first_time = now.replace(
+        hour=17,
+        minute=0,
+        second=0,
+        microsecond=0
+    )
 
-    # 이미 21시가 지났다면 내일 21시부터 시작
+    # 이미 17시가 지났다면 내일 17시부터 시작
     if now > first_time:
         first_time += timedelta(days=1)
 
@@ -35,9 +41,12 @@ async def scheduled_message():
     await asyncio.sleep(wait_seconds)
 
     while not client.is_closed():
-        await channel.send("# 지금 시각부터 블랙마켓이 시작되었습니다. @1515365834682404946 ")
+        await channel.send(
+            "# 블랙마켓이 시작되었습니다 <@&1515334567446183967> "
+        )
 
-        print("메시지 전송 완료")
+        current_time = datetime.now(ZoneInfo("Asia/Seoul"))
+        print(f"메시지 전송 완료 ({current_time})")
 
         # 20시간 대기
         await asyncio.sleep(20 * 60 * 60)
