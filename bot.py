@@ -3,8 +3,6 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import asyncio
 import os
-import random
-import traceback
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -15,14 +13,8 @@ if TOKEN is None:
 CHANNEL_ID = 1515335921854316664
 ROLE_ID = 1515334567446183967
 
-# 봇 인스턴스 번호
-BOT_INSTANCE = random.randint(1000, 9999)
-
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
-
-# 스케줄러 중복 실행 방지
-scheduler_task = None
 
 
 async def scheduled_message():
@@ -30,89 +22,111 @@ async def scheduled_message():
     await client.wait_until_ready()
 
     print("✅ 스케줄러 시작", flush=True)
-    print(f"BOT_INSTANCE = {BOT_INSTANCE}", flush=True)
 
-    try:
+    # 채널 가져오기
+    channel = client.get_channel(CHANNEL_ID)
 
-        channel = client.get_channel(CHANNEL_ID)
+    if channel is None:
 
-        if channel is None:
-
-            print("채널 캐시에 없음 -> fetch 시도", flush=True)
+        try:
 
             channel = await client.fetch_channel(
                 CHANNEL_ID
             )
 
-        now = datetime.now(
-            ZoneInfo("Asia/Seoul")
-        )
+        except Exception as e:
 
-        # 테스트용 1분 후
+            print(
+                f"❌ 채널을 찾지 못함: {e}",
+                flush=True
+            )
 
-        target = now + timedelta(
-            minutes=1
-        )
+            return
 
-        wait_seconds = (
-            target - now
-        ).total_seconds()
+    # 현재 한국 시간
+    now = datetime.now(
+        ZoneInfo("Asia/Seoul")
+    )
 
-        print("=" * 50, flush=True)
+    # 오늘 오후 5시
+    first_time = now.replace(
+        hour=17,
+        minute=0,
+        second=0,
+        microsecond=0
+    )
+
+    # 이미 5시가 지났으면 내일 5시부터 시작
+    if now >= first_time:
+
+        first_time += timedelta(days=1)
+
+    wait_seconds = (
+        first_time - now
+    ).total_seconds()
+
+    print("=" * 50, flush=True)
+    print(
+        f"현재 시각(KST): {now}",
+        flush=True
+    )
+
+    print(
+        f"첫 전송 예정(KST): {first_time}",
+        flush=True
+    )
+
+    print(
+        f"첫 메시지까지 {wait_seconds:.0f}초 대기",
+        flush=True
+    )
+
+    print("=" * 50, flush=True)
+
+    # 오후 5시까지 대기
+
+    await asyncio.sleep(
+        wait_seconds
+    )
+
+    # 이후 20시간마다 반복
+
+    while not client.is_closed():
+
+        try:
+
+            await channel.send(
+                f"# 블랙마켓이 시작되었습니다 <@&1515334567446183967> "
+            )
+
+            send_time = datetime.now(
+                ZoneInfo("Asia/Seoul")
+            )
+
+            print(
+                f"✅ 메시지 전송 완료 ({send_time})",
+                flush=True
+            )
+
+        except Exception as e:
+
+            print(
+                f"❌ 메시지 전송 실패: {e}",
+                flush=True
+            )
+
         print(
-            f"현재 시각(KST): {now}",
+            "다음 메시지까지 20시간 대기",
             flush=True
         )
-
-        print(
-            f"테스트 전송 예정(KST): {target}",
-            flush=True
-        )
-
-        print(
-            f"{wait_seconds:.0f}초 대기",
-            flush=True
-        )
-
-        print("=" * 50, flush=True)
 
         await asyncio.sleep(
-            wait_seconds
+            20 * 60 * 60
         )
-
-        await channel.send(
-            f"# 테스트 메시지입니다! [{BOT_INSTANCE}] <@&{ROLE_ID}>"
-        )
-
-        print(
-            f"✅ 테스트 메시지 전송 완료 [{BOT_INSTANCE}]",
-            flush=True
-        )
-
-    except Exception as e:
-
-        print(
-            "❌ scheduled_message 오류 발생",
-            flush=True
-        )
-
-        print(
-            type(e).__name__,
-            flush=True
-        )
-
-        print(
-            e,
-            flush=True
-        )
-
-        traceback.print_exc()
 
 
 @client.event
 async def on_ready():
-
-    global scheduler_task
 
     print("=" * 50, flush=True)
 
@@ -131,31 +145,24 @@ async def on_ready():
         flush=True
     )
 
-    print(
-        f"BOT_INSTANCE : {BOT_INSTANCE}",
-        flush=True
-    )
-
     print("=" * 50, flush=True)
 
     # 중복 실행 방지
 
-    if scheduler_task is None:
+    if not hasattr(
+        client,
+        "scheduler_started"
+    ):
+
+        client.scheduler_started = True
 
         print(
-            "스케줄러 생성",
+            "✅ scheduled_message 시작",
             flush=True
         )
 
-        scheduler_task = asyncio.create_task(
+        asyncio.create_task(
             scheduled_message()
-        )
-
-    else:
-
-        print(
-            "이미 스케줄러가 실행 중",
-            flush=True
         )
 
 
