@@ -66,6 +66,7 @@ async def scheduled_message():
     ).total_seconds()
 
     print("=" * 50, flush=True)
+
     print(
         f"현재 시각(KST): {now}",
         flush=True
@@ -84,19 +85,17 @@ async def scheduled_message():
     print("=" * 50, flush=True)
 
     # 오후 5시까지 대기
-
     await asyncio.sleep(
         wait_seconds
     )
 
     # 이후 20시간마다 반복
-
     while not client.is_closed():
 
         try:
 
             await channel.send(
-                f"# 블랙마켓이 시작되었습니다 <@&1515334567446183967> "
+                f"# 블랙마켓이 시작되었습니다 <@&{ROLE_ID}>"
             )
 
             send_time = datetime.now(
@@ -145,10 +144,25 @@ async def on_ready():
         flush=True
     )
 
+    # 🔽 스트리밍 상태 설정
+    activity = discord.Streaming(
+        name="📢 블랙마켓 알림 봇",
+        url="https://www.twitch.tv/nautlidauntiscute"
+    )
+
+    await client.change_presence(
+        status=discord.Status.online,
+        activity=activity
+    )
+
+    print(
+        "🟣 스트리밍 상태 적용 완료",
+        flush=True
+    )
+
     print("=" * 50, flush=True)
 
     # 중복 실행 방지
-
     if not hasattr(
         client,
         "scheduler_started"
