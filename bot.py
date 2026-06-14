@@ -150,7 +150,7 @@ async def on_ready():
         scheduler_task = asyncio.create_task(
             scheduled_message()
         )
-ㅇ
+
     else:
 
         print(
